@@ -1,7 +1,18 @@
- /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/*
+ * Copyright (C) 2014 alprocto
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package icecast.parser;
 
@@ -32,37 +43,11 @@ public class IcecastParser {
             logList.add(new IcecastLog(input.readLine()));
         }
         ArrayList<IcecastLog> newLogList = IcecastLog.filterByRequestLine(logList, "GET /music ");
-        IcecastLog.filterRemoveIP(newLogList, "152.18.67.19");
         IcecastLog.filterRemoveIP(newLogList, "127.0.0.1");
-//        System.out.println(IcecastLog.athPerDay(newLogList));
-//        System.out.println("");
-//        System.out.println("");
-        System.out.println(IcecastLog.listenersPerDay(newLogList, 500));
-//        System.out.println(IcecastLog.athPerHourPerDay(newLogList));
-//        
-//        for(int i = 0; i<newLogList.size(); i++){
-//            IcecastLog current = newLogList.get(i);
-//            System.out.println(current.toString());
-//        }
-
         
-//        IcecastLog test = new IcecastLog("108.192.131.2 - - [09/Sep/2013:22:00:36 -0400] \"GET /music HTTP/1.1\" 404 106 \"-\" \"iTunes/11.0.5 (Windows; Microsoft Windows 7 x64 Home Premium Edition Service Pack 1 (Build 7601)) AppleWebKit/536.30.1\" 1234567890");
-//        System.out.println(test.ipAddress);
-//        System.out.println(test.userIdentifier);
-//        System.out.println(test.userID);
-//        System.out.println(test.day);
-//        System.out.println(test.month);
-//        System.out.println(test.year);
-//        System.out.println(test.hour);
-//        System.out.println(test.minute);
-//        System.out.println(test.second);
-//        System.out.println(test.timeZone);
-//        System.out.println(test.requestLine);
-//        System.out.println(test.httpStatusCode);
-//        System.out.println(test.size);
-//        System.out.println(test.referer);
-//        System.out.println(test.clientSoftware);
-//        System.out.println(test.listenerTime);
+        System.out.println(IcecastLog.athPerDay(newLogList));
+        System.out.println(IcecastLog.listenersPerDay(newLogList, 500));
+        System.out.println(IcecastLog.athPerHourPerDay(newLogList));
         // TODO code application logic here
     }
 
