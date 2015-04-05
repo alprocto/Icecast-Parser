@@ -44,10 +44,17 @@ public class IcecastParser {
         }
         ArrayList<IcecastLog> newLogList = IcecastLog.filterByRequestLine(logList, "GET /music ");
         IcecastLog.filterRemoveIP(newLogList, "127.0.0.1");
+        IcecastLog.filterRemoveIP(newLogList, "152.18.67.19");
+
+       for(int i=0; i<newLogList.size(); i++){
+           IcecastLog current = newLogList.get(i);
+           System.out.println(current.toStringTab());
+       }
         
-        System.out.println(IcecastLog.athPerDay(newLogList));
-        System.out.println(IcecastLog.listenersPerDay(newLogList, 500));
-        System.out.println(IcecastLog.athPerHourPerDay(newLogList));
+        
+//        System.out.println(IcecastLog.athPerDay(newLogList));
+//        System.out.println(IcecastLog.listenersPerDay(newLogList, 500));
+//        System.out.println(IcecastLog.athPerHourPerDay(newLogList));
         // TODO code application logic here
     }
 
