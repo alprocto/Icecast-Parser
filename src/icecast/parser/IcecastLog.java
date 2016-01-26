@@ -16,7 +16,7 @@
  */
 package icecast.parser;
 
-import java.util.ArrayList;
+import java.util.*;
 
 /**
  *
@@ -26,6 +26,9 @@ import java.util.ArrayList;
 public class IcecastLog {
 
     private static final String[] monthsOfTheYear = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    private static ArrayList<Long> ipFilterList = new ArrayList<Long>();
+    private static ArrayList<String> requestLineList = new ArrayList<String>();
+    private static ArrayList<String[]> replaceStrings = new ArrayList<String[]>();
 
     long ipAddressDec;
     String ipAddressString;
@@ -57,6 +60,10 @@ public class IcecastLog {
         int markerIndex;
         String date;
         String temp;
+        
+        for(int i = 0; i<replaceStrings.size(); i++){
+            input = input.replaceAll(replaceStrings.get(i)[0], replaceStrings.get(i)[1]);
+        }
 
         //get ipAddressDec
         markerIndex = input.indexOf(" ", currentIndex);                         //find ip address
@@ -159,8 +166,8 @@ public class IcecastLog {
         return ipAddressString + "\t" + userIdentifier + "\t" + userID + "\t[" + dayString + "/" + monthString + "/" + yearString + " " + timeZoneString + "]\t\"" + requestLine + "\"\t" + Integer.toString(httpStatusCode) + "\t" + Long.toString(size) + "\t\"" + referer + "\"\t\"" + clientSoftware + "\"\t" + Long.toString(listenerTime);
     }
 
-    public static ArrayList<IcecastLog> filterByRequestLine(ArrayList<IcecastLog> input, String filter) {
-        ArrayList<IcecastLog> output = new ArrayList<IcecastLog>();
+    public static LinkedList<IcecastLog> filterByRequestLine(LinkedList<IcecastLog> input, String filter) {
+        LinkedList<IcecastLog> output = new LinkedList<IcecastLog>();
         for (int i = 0; i < input.size(); i++) {
             IcecastLog current = input.get(i);
             if (current.requestLine.startsWith(filter)) {
@@ -170,25 +177,41 @@ public class IcecastLog {
         return output;
     }
 
-    public static void filterRemoveIP(ArrayList<IcecastLog> input, String filter) {
+    public static boolean contansFilteredRequestLine(IcecastLog input) {
+        for (int i = 0; i < requestLineList.size(); i++) {
+            if (input.requestLine.startsWith(requestLineList.get(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static void addReplaceString(String original, String replacement) {
+        String[] temp = new String[2];
+        temp[0] = original;
+        temp[1] = replacement;
+        replaceStrings.add(temp);
+    }
+    public static void addRequestLineFilter(String filter) {
+        requestLineList.add(filter);
+    }
+
+    public static boolean contansFilteredIP(IcecastLog input) {
+        return ipFilterList.contains(input.ipAddressDec);
+    }
+
+    public static void addIPFilter(String filter) {
         String[] addrArray = filter.split("\\.");
         long filterDec = 0;
         for (int i = 0; i < addrArray.length; i++) {
             int power = 3 - i;
             filterDec += ((Integer.parseInt(addrArray[i]) % 256 * Math.pow(256, power)));
         }
-        for (int i = 0; i < input.size();) {
-            IcecastLog current = input.get(i);
-            if (filterDec == current.ipAddressDec) {
-                input.remove(i);
-            } else {
-                i++;
-            }
-        }
+        ipFilterList.add(filterDec);
     }
 
-    public static String athPerDay(ArrayList<IcecastLog> input) {
-        String output = "\n";
+    public static String athPerDay(LinkedList<IcecastLog> input) {
+        String output = "Date\tATH\n";
         IcecastLog first = input.get(0);
         int currentYear = first.yearDec;
         int currentMonth = first.monthDec;
@@ -202,7 +225,7 @@ public class IcecastLog {
             if (currentYear == current.yearDec && currentMonth == current.monthDec && currentDay == current.dayDec) {
                 currentATH += current.listenerTime;
             } else {
-                output = new String(output + (Integer.toString(currentYear) + "/" + Integer.toString(currentMonth) + "/" + Integer.toString(currentDay) + "\t" + Double.toString((double)currentATH / 3600) + "\n"));
+                output = new String(output + (Integer.toString(currentYear) + "/" + Integer.toString(currentMonth) + "/" + Integer.toString(currentDay) + "\t" + Double.toString((double) currentATH / 3600) + "\n"));
                 currentYear = current.yearDec;
                 currentMonth = current.monthDec;
                 currentDay = current.dayDec;
@@ -213,8 +236,8 @@ public class IcecastLog {
         return output;
     }
 
-    public static String athPerHourPerDay(ArrayList<IcecastLog> input) {
-        String output = "\n";
+    public static String athPerHourPerDay(LinkedList<IcecastLog> input) {
+        String output = "Date\t12:00 AM\t1:00 AM\t2:00 AM\t3:00 AM\t4:00 AM\t5:00 AM\t6:00 AM\t7:00 AM\t8:00 AM\t9:00 AM\t10:00 AM\t11:00 AM\t12:00 PM\t1:00 PM\t2:00 PM\t3:00 PM\t4:00 PM\t5:00 PM\t6:00 PM\t7:00 PM\t8:00 PM\t9:00 PM\t10:00 PM\t11:00 PM\n";
         long[] currentDayATH = new long[24];
         long[] nextDayATH = new long[24];
         IcecastLog first = input.get(0);
@@ -231,7 +254,7 @@ public class IcecastLog {
                 long timeLeft = current.listenerTime;
                 if (timeLeft <= (3600 - timeOffSet)) {
                     currentDayATH[current.hourDec] += timeLeft;
-                    timeLeft=0;
+                    timeLeft = 0;
                 } else {
                     currentDayATH[current.hourDec] += (3600 - timeOffSet);
                     timeLeft -= (3600 - timeOffSet);
@@ -239,7 +262,7 @@ public class IcecastLog {
                     for (int j = current.hourDec + 1; j < 24; j++) {
                         if (timeLeft <= 3600) {
                             currentDayATH[j] += timeLeft;
-                            timeLeft=0;
+                            timeLeft = 0;
                         } else {
                             currentDayATH[j] += 3600;
                             timeLeft -= 3600;
@@ -249,7 +272,7 @@ public class IcecastLog {
                         for (int j = 0 + 1; j < 24; j++) {
                             if (timeLeft <= 3600) {
                                 nextDayATH[j] += timeLeft;
-                                timeLeft=0;
+                                timeLeft = 0;
                             } else {
                                 nextDayATH[j] += 3600;
                                 timeLeft -= 3600;
@@ -261,12 +284,12 @@ public class IcecastLog {
                 }
             } else {
                 String ATH = "";
- 
-                for(int j=0;j<24;j++){
-                    ATH = new String(ATH + "\t" + Double.toString((double)currentDayATH[j]/3600));
+
+                for (int j = 0; j < 24; j++) {
+                    ATH = new String(ATH + "\t" + Double.toString((double) currentDayATH[j] / 3600));
                 }
                 output = new String(output + (Integer.toString(currentYear) + "/" + Integer.toString(currentMonth) + "/" + Integer.toString(currentDay) + ATH + "\n"));
-                currentDayATH=nextDayATH;
+                currentDayATH = nextDayATH;
                 nextDayATH = new long[24];
                 currentYear = current.yearDec;
                 currentMonth = current.monthDec;
@@ -278,15 +301,14 @@ public class IcecastLog {
         return output;
     }
 
-    public static String listenersPerDay(ArrayList<IcecastLog> input, int maxPossibleListeners) {
-        String output = "\n";
-        long[] listenerList = new long[maxPossibleListeners];
+    public static String listenersPerDay(LinkedList<IcecastLog> input) {
+        String output = "Date\tCount\n";
+        LinkedList<Long> listenerList = new LinkedList<Long>();
         IcecastLog first = input.get(0);
         int currentYear = first.yearDec;
         int currentMonth = first.monthDec;
         int currentDay = first.dayDec;
         int currentListenerCount = 0;
-        int next = 0;
 
         for (int i = 0; i < input.size(); i++) {
 
@@ -294,15 +316,9 @@ public class IcecastLog {
 
             if (currentYear == current.yearDec && currentMonth == current.monthDec && currentDay == current.dayDec) {
                 boolean newUser = true;
-                for (int j = 0; j < next; j++) {
-                    if (current.ipAddressDec == listenerList[j]) {
-                        newUser = false;
-                    }
-                }
-                if (newUser) {
+                if (!listenerList.contains(current.ipAddressDec)) {
+                    listenerList.add(current.ipAddressDec);
                     currentListenerCount++;
-                    listenerList[next] = current.ipAddressDec;
-                    next++;
                 }
 
             } else {
@@ -312,9 +328,8 @@ public class IcecastLog {
                 currentDay = current.dayDec;
                 currentListenerCount = 1;
 
-                listenerList = new long[maxPossibleListeners];
-                listenerList[0] = current.ipAddressDec;
-                next = 1;
+                listenerList = new LinkedList<Long>();
+                listenerList.add(current.ipAddressDec);
             }
 
         }
